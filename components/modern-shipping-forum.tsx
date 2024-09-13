@@ -5,15 +5,41 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { ArrowUpIcon, ArrowDownIcon, MessageSquareIcon, PackageIcon, TruckIcon, SearchIcon, HomeIcon, TrendingUpIcon, PlusCircleIcon, DollarSignIcon, ClockIcon, BotIcon, SendIcon, UserIcon, BellIcon, MenuIcon, BoxIcon, CalendarIcon, HashIcon, Flame, UsersIcon, VideoIcon } from "lucide-react"
+import { ArrowUpIcon, ArrowDownIcon, MessageSquareIcon, PackageIcon, TruckIcon, HomeIcon, DollarSignIcon, ClockIcon, BotIcon, SendIcon, BellIcon, MenuIcon, BoxIcon, HashIcon, UsersIcon, VideoIcon } from "lucide-react"
 
-const Comment = ({ comment }) => (
+// Define types for comments and posts
+interface CommentType {
+  id: number;
+  content: string;
+  author: string;
+  date: string;
+}
+
+interface PostType {
+  title: string;
+  content: string;
+  upvotes: number;
+  category: string;
+  comments: CommentType[];
+}
+
+// Types for ForumPost component props
+interface ForumPostProps {
+  post: PostType;
+}
+
+// Types for ForumFeed component props
+interface ForumFeedProps {
+  posts: PostType[];
+}
+
+const Comment = ({ comment }: { comment: CommentType }) => (
   <div className="flex items-start space-x-4 py-4">
     <Avatar className="w-10 h-10">
       <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${comment.author}`} alt={comment.author} />
@@ -29,19 +55,19 @@ const Comment = ({ comment }) => (
   </div>
 )
 
-const ForumPost = ({ post: initialPost }) => {
-  const [post, setPost] = useState(initialPost)
-  const [newComment, setNewComment] = useState("")
-  const [showAllComments, setShowAllComments] = useState(false)
+const ForumPost = ({ post: initialPost }: ForumPostProps) => {
+  const [post, setPost] = useState<PostType>(initialPost);
+  const [newComment, setNewComment] = useState<string>('');
+  const [showAllComments, setShowAllComments] = useState(false);
 
-  const handleVote = (type) => {
+  const handleVote = (type: 'up' | 'down') => {
     setPost(prevPost => ({
       ...prevPost,
       upvotes: type === 'up' ? prevPost.upvotes + 1 : prevPost.upvotes - 1
     }))
   }
 
-  const handleAddComment = (e) => {
+  const handleAddComment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (newComment.trim()) {
       const comment = {
@@ -128,7 +154,7 @@ const ForumPost = ({ post: initialPost }) => {
   )
 }
 
-const ForumFeed = ({ posts }) => (
+const ForumFeed = ({ posts }: ForumFeedProps) => (
   <div className="space-y-6">
     {posts.map((post, index) => (
       <ForumPost key={index} post={post} />
@@ -137,11 +163,21 @@ const ForumFeed = ({ posts }) => (
 )
 
 const AIAssistant = () => {
-  const [query, setQuery] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [selectedPost, setSelectedPost] = useState(null)
+  interface Reference {
+    title: string;
+    id: string;
+  }
+  
+  interface AIResponse {
+    title: string;
+    content: string;
+    references: Reference[];
+  }
+  const [query, setQuery] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedPost, setSelectedPost] = useState<AIResponse | null>(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e:any) => {
     e.preventDefault()
     if (query.trim()) {
       setIsLoading(true)
@@ -241,7 +277,7 @@ const LiveDiscussions = () => {
     { id: 3, author: "NewShipper", content: "What's the best way to handle returns for an e-commerce business?" },
   ])
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = (e:any) => {
     e.preventDefault()
     if (message.trim()) {
       setMessages([...messages, { id: Date.now(), author: "You", content: message }])
@@ -316,7 +352,7 @@ const TrendingGroups = () => {
                 <DialogHeader>
                   <DialogTitle className="text-yellow-500">Join {topic.title} Group</DialogTitle>
                 </DialogHeader>
-                <p>Are you sure you want to join the {topic.title} group? You'll receive notifications about new discussions and updates.</p>
+                <p>Are you sure you want to join the {topic.title} group? You&apos;ll receive notifications about new discussions and updates.</p>
                 <DialogFooter>
                   <Button className="bg-yellow-500 text-gray-900 hover:bg-yellow-400">Confirm</Button>
                 </DialogFooter>
@@ -337,22 +373,25 @@ const ExpertCorner = () => {
   ]
 
   const [showCamera, setShowCamera] = useState(false)
-  const videoRef = useRef(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     if (showCamera) {
       navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
-          videoRef.current.srcObject = stream
+          if (videoRef.current) { 
+            videoRef.current.srcObject = stream; 
+          }
         })
-        .catch(err => console.error("Error accessing camera:", err))
+        .catch(err => console.error("Error accessing camera:", err));
     }
+
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop())
+        (videoRef.current.srcObject as MediaStream).getTracks().forEach((track: MediaStreamTrack) => track.stop());
       }
-    }
-  }, [showCamera])
+    };
+  }, [showCamera]);
 
   return (
     <Card className="bg-gray-800 border-gray-700">
@@ -385,7 +424,8 @@ const ExpertCorner = () => {
                     <DialogTitle className="text-yellow-500">Join Live Call with {expert.name}</DialogTitle>
                   </DialogHeader>
                   <div className="mt-4">
-                    <p>You're about to join a live video call with {expert.name}. Please ensure your camera and microphone are working.</p>
+                  <p>You&apos;re about to join a live video call with {expert.name}. Please ensure your camera and microphone are working.</p>
+
                     {showCamera && (
                       <div className="mt-4 relative w-full h-48 bg-gray-700 rounded-lg overflow-hidden">
                         <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
@@ -546,12 +586,10 @@ const samplePosts = [
 ]
 
 export function ModernShippingForumComponent() {
-  const [activeTab, setActiveTab] = useState("feed")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [filteredPosts, setFilteredPosts] = useState(samplePosts)
 
-  const handleTopicClick = (topic) => {
-    setActiveTab("feed")
+  const handleTopicClick = (topic:any) => {
     setFilteredPosts(samplePosts.filter(post => post.category === topic))
   }
 
@@ -653,7 +691,8 @@ export function ModernShippingForumComponent() {
                   <ForumFeed posts={filteredPosts.filter(post => post.upvotes > 20)} />
                 </TabsContent>
                 <TabsContent value="new">
-                  <ForumFeed posts={filteredPosts.sort((a, b) => new Date(b.comments[0].date) - new Date(a.comments[0].date))} />
+                <ForumFeed posts={filteredPosts.sort((a, b) => new Date(b.comments[0].date).getTime() - new Date(a.comments[0].date).getTime())} />
+
                 </TabsContent>
                 <TabsContent value="live">
                   <LiveDiscussions />
